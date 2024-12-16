@@ -1,0 +1,14 @@
+# Python 虛擬環境
+.venv/
+.env
+
+# 前端相關忽略規則
+project/frontend/node_modules/
+project/frontend/public/build/
+
+# 忽略 macOS 系統文件
+.DS_Store
+
+# 後端配置文件
+/backend/database/db_config.py
+
