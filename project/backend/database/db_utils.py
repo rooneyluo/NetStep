@@ -57,40 +57,132 @@ def create_tables():
                 username VARCHAR(255) UNIQUE NOT NULL,
                 password VARCHAR(255) NOT NULL,
                 email VARCHAR(255) UNIQUE NOT NULL,
-                first_name VARCHAR(100),
-                last_name VARCHAR(100),
                 role VARCHAR(50) DEFAULT 'user',
+                is_email_verified BOOLEAN DEFAULT FALSE,
+                email_verified_at TIMESTAMP,
+                phone_number VARCHAR(20),
+                is_phone_verified BOOLEAN DEFAULT FALSE,
+                phone_verified_at TIMESTAMP,
                 photo BYTEA,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                status ENUM('active', 'inactive') DEFAULT 'active',
+                likes INT DEFAULT 0,
+                dislikes INT DEFAULT 0,
+                created_by INT,
+                updated_by INT,
+                CONSTRAINT fk_created_by FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+                CONSTRAINT fk_updated_by FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL,
             );
-            """
-        )
+        """)
 
-        print("User table created successfully!")
+        print("Users table created successfully!")
 
         # Create events table
         cur.execute("""
             CREATE TABLE IF NOT EXISTS events (
                 id SERIAL PRIMARY KEY,
-                name VARCHAR(255) NOT NULL,
-                location VARCHAR(255) NOT NULL,
+                title VARCHAR(255) NOT NULL,
+                description VARCHAR(255),
+                organizer_id INT NOT NULL,
+                location_id INT NOT NULL,
                 start_time TIMESTAMP NOT NULL,
                 end_time TIMESTAMP NOT NULL,
-                description VARCHAR(255),
-                create_by INT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                CONSTRAINT fk_user FOREIGN KEY (create_by) REFERENCES users(id) ON DELETE CASCADE
-        );
+                created_by INT NOT NULL,
+                updated_by INT NOT NULL,
+                current_participants INT DEFAULT 0,
+                max_participants INT DEFAULT 0,
+                status ENUM('active', 'cancelled', 'completed', 'expired') DEFAULT 'active',
+                tags VARCHAR(255) DEFAULT '{}',
+                likes INT DEFAULT 0,
+                dislikes INT DEFAULT 0,   
+                CONSTRAINT fk_organizer FOREIGN KEY (organizer_id) REFERENCES users(id) ON DELETE CASCADE,
+                CONSTRAINT fk_location FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE CASCADE,
+                CONSTRAINT fk_user FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE      
+            );
+        """)
 
-            """
-        )
-        
         print("Events table created successfully!")
 
-        conn.commit()
+        # Create locations table
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS locations (
+                id SERIAL PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                address VARCHAR(255) NOT NULL,
+                city VARCHAR(255) NOT NULL,
+                information VARCHAR(255),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                created_by INT NOT NULL,
+                update_by INT NOT NULL,
+                status ENUM('active', 'inactive') DEFAULT 'active',
+                CONSTRAINT fk_user FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
+                CONSTRAINT fk_user FOREIGN KEY (update_by) REFERENCES users(id) ON DELETE CASCADE
+            );
+        """)
 
+        print("Locations table created successfully!")
+
+        # Create entity_logs table
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS entity_logs (
+                log_id SERIAL PRIMARY KEY,
+                entity_type VARCHAR(50) NOT NULL,
+                entity_id INT NOT NULL,
+                operation_type ENUM('INSERT', 'UPDATE', 'DELETE') NOT NULL,
+                operation_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                operated_by INT NOT NULL,
+                CONSTRAINT fk_operator FOREIGN KEY (operated_by) REFERENCES users(id) ON DELETE CASCADE
+            );
+        """)
+
+        print("Entity logs table created successfully!")
+
+        # Create generic logging trigger function
+        cur.execute("""
+            CREATE OR REPLACE FUNCTION log_entity_changes() RETURNS TRIGGER AS $$
+            BEGIN
+                INSERT INTO entity_logs (entity_type, entity_id, operation_type, operated_by)
+                VALUES (TG_TABLE_NAME, COALESCE(NEW.id, OLD.id), TG_OP, COALESCE(NEW.created_by, OLD.deleted_by));
+                RETURN COALESCE(NEW, OLD);
+            END;
+            $$ LANGUAGE plpgsql;
+        """)
+
+        print("Generic logging trigger function created successfully!")
+
+        # Create triggers for logging changes to users table
+        cur.execute("""
+            CREATE TRIGGER log_users_changes
+            AFTER INSERT OR UPDATE OR DELETE ON users
+            FOR EACH ROW EXECUTE FUNCTION log_entity_changes();
+        """)
+
+        print("Trigger for logging changes to users table created successfully!")
+
+        # Create triggers for logging changes to events table
+        cur.execute("""
+            CREATE TRIGGER log_events_changes
+            AFTER INSERT OR UPDATE OR DELETE ON events
+            FOR EACH ROW EXECUTE FUNCTION log_entity_changes();
+        """)
+
+        print("Trigger for logging changes to events table created successfully!")
+
+        # Create triggers for logging changes to locations table
+        cur.execute("""
+            CREATE TRIGGER log_locations_changes
+            AFTER INSERT OR UPDATE OR DELETE ON locations
+            FOR EACH ROW EXECUTE FUNCTION log_entity_changes();
+        """)
+
+        print("Trigger for logging changes to locations table created successfully!")
+        
+        conn.commit()
     
     except Exception as e:
         print(f"Error creating tables: {e}")
