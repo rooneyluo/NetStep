@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Response, Request
-from database.db_utils import get_user_by_username, add_user, create_database, create_tables, add_event, get_all_events
+from database.db_utils import get_user_by_username, add_user, add_event, get_all_events
 from model.user_model import UserCreate, UserResponse, UserLogin
 from model.event_model import EventCreate, EventResponse
 from utils import verify_password, hash_password, verify_access_token, create_access_token
@@ -69,13 +69,6 @@ async def logout(response: Response):
     response.set_cookie(key="access_token", value="", httponly=True, max_age=0, expires=0)
     
     return {"message": "Successfully logged out"}
-
-@router.get("/db-test")
-async def db_test():
-    create_database("volley_court_match")
-    create_tables()
-
-    return {"message": "Database created successfully"}
 
 @router.post("/create_event")
 async def create_event(event: EventCreate):
