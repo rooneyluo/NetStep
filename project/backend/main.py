@@ -17,7 +17,7 @@ app.add_middleware(
 )
 
 # 提供靜態檔案
-app.mount("/", StaticFiles(directory="/path/to/your/frontend/dist", html=True), name="static")
+#app.mount("/", StaticFiles(directory="/path/to/your/frontend/dist", html=True), name="static")
 
 app.include_router(user_router)
 
