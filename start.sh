@@ -31,30 +31,3 @@ else
     echo "Error: Database directory $DB_DIR not found."
     exit 1
 fi
-
-# Start the application
-echo "Starting the application"
-PROJECT_DIR="$SCRIPT_DIR/project"
-if [ -d "$PROJECT_DIR" ]; then
-    cd "$PROJECT_DIR" || exit
-    # Activate the virtual environment
-    if [ -f "venv/bin/activate" ]; then
-        source venv/bin/activate
-    else
-        echo "Error: Virtual environment not found in $PROJECT_DIR"
-        exit 1
-    fi
-else
-    echo "Error: Project directory $PROJECT_DIR not found."
-    exit 1
-fi
-
-# Start the web server
-BACKEND_DIR="$PROJECT_DIR/backend"
-if [ -d "$BACKEND_DIR" ]; then
-    cd "$BACKEND_DIR" || exit
-    uvicorn main:app --reload --host 0.0.0.0 --port 8000
-else
-    echo "Error: Backend directory $BACKEND_DIR not found."
-    exit 1
-fi

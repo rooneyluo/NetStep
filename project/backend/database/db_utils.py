@@ -1,21 +1,4 @@
-import psycopg2
-from database.db_config import db_config  # Configuration for database connection
 from model.user_model import User
-
-# Function to connect to the database
-def get_db_connection():
-    try:
-        conn = psycopg2.connect(
-            host=db_config['host'],
-            user=db_config['user'],
-            password=db_config['password'],
-            dbname=db_config['dbname'],
-            port=db_config['port']
-        )
-        return conn
-    except Exception as e:
-        print(f"Error connecting to the database: {e}")
-        return None
     
 # Function to insert a new user
 def add_user(username, password, email, first_name=None, last_name=None, role='user', photo=None):

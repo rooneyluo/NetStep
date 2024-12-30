@@ -1,4 +1,30 @@
-from project.backend.database.create_db import get_db_connection
+from db_config import db_config  # Configuration for database connection
+import psycopg2
+
+# Database connection manager
+class DatabaseConnectionManager:
+    def __init__(self, db_config):
+        self.conn = None
+        self.db_config = db_config
+
+    def __enter__(self):
+        try:
+            self.conn = psycopg2.connect(
+                host=self.db_config['host'],
+                user=self.db_config['user'],
+                password=self.db_config['password'],
+                dbname=self.db_config['dbname'],
+                port=self.db_config['port']
+            )
+            return self.conn
+        except Exception as e:
+            print(f"Error connecting to the database: {e}")
+            return None
+        
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.conn:
+            self.conn.close()
+
 # create users table
 def create_users_table(cur):
     cur.execute("""
@@ -54,8 +80,8 @@ def create_events_table(cur):
             dislikes INT DEFAULT 0,   
             CONSTRAINT fk_organizer FOREIGN KEY (organizer_id) REFERENCES users(id) ON DELETE CASCADE,
             CONSTRAINT fk_location FOREIGN KEY (location_id) REFERENCES locations(id) ON DELETE CASCADE,
-            CONSTRAINT fk_user FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
-            CONSTRAINT fk_user FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE CASCADE,
+            CONSTRAINT fk_user_created_by FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
+            CONSTRAINT fk_user_updated_by FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE CASCADE,
             CONSTRAINT chk_max_participants CHECK (max_participants >= 0),
             CONSTRAINT chk_current_participants CHECK (current_participants >= 0),
             CONSTRAINT chk_likes CHECK (likes >= 0),
@@ -75,10 +101,10 @@ def create_locations_table(cur):
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             created_by INT NOT NULL,
-            update_by INT NOT NULL,
+            updated_by INT NOT NULL,
             status VARCHAR(10) DEFAULT 'active' CHECK(status IN ('active', 'inactive')),
-            CONSTRAINT fk_user FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
-            CONSTRAINT fk_user FOREIGN KEY (update_by) REFERENCES users(id) ON DELETE CASCADE
+            CONSTRAINT fk_user_created_by FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
+            CONSTRAINT fk_user_updated_by FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE CASCADE
         );
     """)
     print("Locations table created successfully!")
@@ -222,51 +248,75 @@ def create_user_verification_codes_table(cur):
     print("User verification codes table created successfully!")
 # create database
 def create_database(database_name):
-    conn = None
     try:
-        conn = get_db_connection()
-        cur = conn.cursor()
-        cur.execute(f"CREATE DATABASE {database_name};")
-        print(f"Database {database_name} created successfully!")
-    
+        new_db_config = db_config.copy()
+        new_db_config['dbname'] = 'postgres'  # Connect to the default database to create a new one
+        with DatabaseConnectionManager(db_config) as conn:
+            with conn.cursor() as cur:
+                conn.autocommit = True
+
+                cur.execute(f"SELECT 1 FROM pg_database WHERE datname = '{database_name}';")
+                exists = cur.fetchone()
+                if exists:
+                    print(f"Database {database_name} already exists!")
+                    return
+                
+                # Validate database name
+                if not database_name.isidentifier():
+                    raise ValueError("Invalid database name: must contain only letters, numbers, or underscores, and cannot start with a number")
+                    
+                cur.execute(f"CREATE DATABASE {database_name};")
+                print(f"Database {database_name} created successfully!")
+
     except Exception as e:
-        print(f"Error creating database: {e}")
-    
-    finally:
-        if cur:
-            cur.close()
-        if conn:
-            conn.close()
+        print(f"Error creating database: {e}")        
 # Function to create tables
 def create_tables():
-    conn = None
     try:
-        conn = get_db_connection()
-        
-        cur = conn.cursor()
-        # Create tables
-        create_users_table(cur)
-        create_events_table(cur)
-        create_locations_table(cur)
-        create_event_participants_table(cur)
-        create_event_feedbacks_table(cur)
-        create_user_feedbacks_table(cur)
-        create_user_notifications_table(cur)
-        create_user_messages_table(cur)
-        create_login_attempts_table(cur)
-        create_user_auth_providers_table(cur)
-        create_user_tokens_table(cur)
-        create_user_verification_codes_table(cur)
-        
-        # Commit changes
-        conn.commit()
-        # Close cursor and connection
-        cur.close()
-        conn.close()
-        print("Database initialization completed successfully!")
+        with DatabaseConnectionManager(db_config) as conn:
+            with conn.cursor() as cur:
+                # Create tables
+                create_users_table(cur)
+                create_locations_table(cur)
+                create_events_table(cur)
+                create_event_participants_table(cur)
+                create_event_feedbacks_table(cur)
+                create_user_feedbacks_table(cur)
+                create_user_notifications_table(cur)
+                create_user_messages_table(cur)
+                create_login_attempts_table(cur)
+                create_user_auth_providers_table(cur)
+                create_user_tokens_table(cur)
+                create_user_verification_codes_table(cur)
+            
+                # Commit changes
+                conn.commit()
+                print("Database initialization completed successfully!")
     except Exception as e:
         print(f"Error initializing database: {e}")
+# Function to drop tables
+def drop_tables():
+    try:
+        with DatabaseConnectionManager(db_config) as conn:
+            with conn.cursor() as cur:
+                cur.execute("DROP TABLE IF EXISTS user_verification_codes;")
+                cur.execute("DROP TABLE IF EXISTS user_tokens;")
+                cur.execute("DROP TABLE IF EXISTS user_auth_providers;")
+                cur.execute("DROP TABLE IF EXISTS login_attempts;")
+                cur.execute("DROP TABLE IF EXISTS user_messages;")
+                cur.execute("DROP TABLE IF EXISTS user_notifications;")
+                cur.execute("DROP TABLE IF EXISTS user_feedbacks;")
+                cur.execute("DROP TABLE IF EXISTS event_feedbacks;")
+                cur.execute("DROP TABLE IF EXISTS event_participants;")
+                cur.execute("DROP TABLE IF EXISTS events;")
+                cur.execute("DROP TABLE IF EXISTS locations;")
+                cur.execute("DROP TABLE IF EXISTS users;")
+                conn.commit()
+                print("Tables dropped successfully!")
+    except Exception as e:
+        print(f"Error dropping tables: {e}")
 
-    if __name__ == "__main__":
-        create_database("net_step")
-        create_tables()
+if __name__ == "__main__":
+    create_database("net_step")
+    create_tables()
+    #drop_tables()
