@@ -1,32 +1,34 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
 
 class EventCreate(BaseModel):
-    name: str
-    location: str
-    start_time: str
-    end_time: str
+    title: str
     description: str
-    create_by: str
-    """
-    image_url: str
-    max_participants: int
-    min_participants: int
-    is_active: bool
-    is_full: bool
-    is_paid: bool
-    is_approved: bool
-    is_deleted: bool
-    is_cancelled: bool
-    is_completed: bool
-    is_volunteering: bool
-    is_volunteer_open: bool
-    """
+    organizer_id: str
+    location_id: str
+    start_time: datetime
+    end_time: datetime
+    created_by: str
+    updated_by: Optional[str] = None
+    current_participants: int = Field(0, ge=0)
+    max_participants: int = Field(..., ge=1)
+    status: str = Field(..., regex="^(active|cancelled|completed|expired)$")
+    tags: Optional[str] = None
+    likes: int = Field(0, ge=0)
+    dislikes: int = Field(0, ge=0)
 
 class EventResponse(BaseModel):
-    name: str
-    location: str
+    title: str
+    description: str
+    organizer_id: str
+    location_id: str
     start_time: str
     end_time: str
-    description: str
+    created_by: str
+    current_participants: int
+    max_participants: int
+    status: str
+    tags: Optional[str] = None
+    likes: int
+    dislikes: int

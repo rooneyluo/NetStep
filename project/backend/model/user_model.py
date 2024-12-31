@@ -1,28 +1,20 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 
 # username, password, email, first_name, last_name, role, photo
-class User(BaseModel):
-    username: str
+class UserBase(BaseModel):
     email: EmailStr
-    password: str
+
+class UserCreate(UserBase):
+    password: str = Field(..., min_length=8, description="Password must be at least 8 characters long")
+
+class UserLogin(UserBase):
+    password: str = Field(..., min_length=8, description="Password must be at least 8 characters long")
+
+class UserResponse(UserBase):
+    username: str
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     role: Optional[str] = None
     photo: Optional[str] = None
-
-class UserCreate(BaseModel):
-    username: str
-    email: EmailStr
-    password: str
-
-class UserLogin(BaseModel):
-    email: str
-    password: str
-
-class UserResponse(BaseModel):
-    username: str
-    email: EmailStr
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
 
