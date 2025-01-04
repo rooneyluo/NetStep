@@ -12,3 +12,9 @@ project/frontend/public/build/
 # 後端配置文件
 /backend/database/db_config.py
 
+# 忽略 Python 編譯的檔案
+*.pyc
+*.pyo
+
+# 忽略所有 __pycache__ 資料夾
+__pycache__/

@@ -1,140 +1,103 @@
-from model.user_model import User
-    
+from model.user_model import UserResponse
+from database.database_connection_manager import DatabaseConnectionManager
+from .db_config import db_config  # Configuration for database connection
+
 # Function to insert a new user
 def add_user(username, password, email, first_name=None, last_name=None, role='user', photo=None):
-    conn = None
-    cur = None
     try:
-        conn = get_db_connection()
-        if conn is None:
-            return None
+        with DatabaseConnectionManager(db_config) as conn:
+            with conn.cursor() as cur:
+                insert_query = """
+                INSERT INTO users (username, password, email, first_name, last_name, role, photo)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                RETURNING username, password, email;
+                """
 
-        cur = conn.cursor()
+                cur.execute(insert_query, (username, password, email, first_name, last_name, role, photo))
+                new_user = cur.fetchone()
 
-        insert_query = """
-        INSERT INTO users (username, password, email, first_name, last_name, role, photo)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
-        RETURNING username, password, email;
-        """
+                conn.commit()
+                
+                print("User added successfully!")
 
-        cur.execute(insert_query, (username, password, email, first_name, last_name, role, photo))
-        new_user = cur.fetchone()
-
-        conn.commit()
-        
-        print("User added successfully!")
-
-        return User(username=new_user[0], password=new_user[1], email=new_user[2])
-    
+                return UserResponse(username=new_user[0], email=new_user[2])
+            
     except Exception as e:
         if conn:
             conn.rollback()
         print(f"Error adding user: {e}")
         return None
-    
-    finally:
-        if cur:
-            cur.close()
-        if conn:
-            conn.close()
 
 # Function to fetch a user by username
 def get_user_by_username(email):
-    conn = None
-    cur = None
     try:
-        conn = get_db_connection()
-        if conn is None:
-            return None
+        with DatabaseConnectionManager(db_config) as conn:
+            with conn.cursor() as cur:
+                query = "SELECT * FROM users WHERE username = %s OR email = %s;"
 
-        cur = conn.cursor()
+                cur.execute(query, (email, email))
 
-        query = "SELECT * FROM users WHERE username = %s OR email = %s;"
+                user = cur.fetchone()
 
-        cur.execute(query, (email, email))
-
-        user = cur.fetchone()
-
-        if user is None:
-            return None
-        
-        return User(username=user[1], password=user[2], email=user[3])
+                if user is None:
+                    return None
+                
+                return UserResponse(username=user[1], email=user[3])
+            
     except Exception as e:
         print(f"Error fetching user: {e}")
         return None
-    
-    finally:
-        if cur:
-            cur.close()
-        if conn:
-            conn.close()
+
 
 # Function to fetch all users
 def fetch_all_users():
-    conn = None
-    cur = None
     try:
-        conn = get_db_connection()
-        if conn is None:
-            return []
+        with DatabaseConnectionManager(db_config) as conn:
+            with conn.cursor() as cur:
+                query = "SELECT * FROM users;"
 
-        cur = conn.cursor()
+                cur.execute(query)
+                users = cur.fetchall()
 
-        query = "SELECT * FROM users;"
-        cur.execute(query)
-        users = cur.fetchall()
-
-        if users is None:
-            return []
-        
-        return [User(username=user[1], password=user[2], email=user[3]) for user in users]
-    
+                if users is None:
+                    return []
+                
+                return [UserResponse(username=user[1], email=user[3]) for user in users]
+   
     except Exception as e:
         print(f"Error fetching users: {e}")
         return []
     
-    finally:
-        if cur:
-            cur.close()
-        if conn:
-            conn.close()
-
 def add_event(name, location, start_time, end_time, description, create_by):
-    conn = None
-    cur = None
     try:
-        conn = get_db_connection()
-        if conn is None:
-            return None
+        with DatabaseConnectionManager(db_config) as conn:
+            with conn.cursor() as cur:
+                # get user id
+                query = "SELECT * FROM users WHERE username = %s OR email = %s;"
+                cur.execute(query, (create_by, create_by))
 
-        cur = conn.cursor()
+                user = cur.fetchone()
 
-        # get user id
-        query = "SELECT * FROM users WHERE username = %s OR email = %s;"
-        cur.execute(query, (create_by, create_by))
+                if user is None:
+                    return None
+                
+                user_id = user[0]
 
-        user = cur.fetchone()
+                # insert event
+                insert_query = """
+                INSERT INTO events (name, location, start_time, end_time, description, create_by)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                RETURNING id, name, location, start_time, end_time, description, create_by;
+                """
 
-        if user is None:
-            return None
-        
-        user_id = user[0]
+                cur.execute(insert_query, (name, location, start_time, end_time, description, user_id))
+                new_event = cur.fetchone()
 
-        # insert event
-        insert_query = """
-        INSERT INTO events (name, location, start_time, end_time, description, create_by)
-        VALUES (%s, %s, %s, %s, %s, %s)
-        RETURNING id, name, location, start_time, end_time, description, create_by;
-        """
-
-        cur.execute(insert_query, (name, location, start_time, end_time, description, user_id))
-        new_event = cur.fetchone()
-
-        conn.commit()
-        
-        print("Event added successfully!")
-        
-        return new_event
+                conn.commit()
+                
+                print("Event added successfully!")
+                
+                return new_event
     except Exception as e:
         if conn:
             conn.rollback()
@@ -146,27 +109,17 @@ def get_all_events():
     conn = None
     cur = None
     try:
-        conn = get_db_connection()
-        if conn is None:
-            return []
+        with DatabaseConnectionManager(db_config) as conn:
+            with conn.cursor() as cur:
+                query = "SELECT name, location, start_time, end_time, description FROM events;"
+                cur.execute(query)
+                events = cur.fetchall()
 
-        cur = conn.cursor()
-
-        query = "SELECT name, location, start_time, end_time, description FROM events;"
-        cur.execute(query)
-        events = cur.fetchall()
-
-        if events is None:
-            return []
-        
-        return events
+                if events is None:
+                    return []
+                
+                return events
     
     except Exception as e:
         print(f"Error fetching events: {e}")
         return []
-    
-    finally:
-        if cur:
-            cur.close()
-        if conn:
-            conn.close()

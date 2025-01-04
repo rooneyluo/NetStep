@@ -5,7 +5,6 @@ from model.user_model import UserCreate, UserResponse, UserLogin
 from model.event_model import EventCreate, EventResponse
 from utils import verify_password, hash_password, verify_access_token, create_access_token
 from typing import List
-from pydantic import EmailStr, ValidationError
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
