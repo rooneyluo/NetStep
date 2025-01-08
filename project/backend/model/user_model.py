@@ -1,20 +1,39 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 
-# username, password, email, first_name, last_name, role, photo
+# 基本用戶信息
 class UserBase(BaseModel):
     email: EmailStr
 
+# 用戶創建模型，包含密碼
 class UserCreate(UserBase):
     password: str = Field(..., min_length=8, description="Password must be at least 8 characters long")
+    role: Optional[str] = "user"
 
-class UserLogin(UserBase):
+# 用戶登錄模型，只包含電子郵件和密碼
+class UserLogin(BaseModel):
+    email: Optional[EmailStr] = None
+    username: Optional[str] = None
+    phone_number: Optional[str] = None
     password: str = Field(..., min_length=8, description="Password must be at least 8 characters long")
+    role: Optional[str] = None
 
-class UserResponse(UserBase):
-    username: str
+# 用戶更新模型，允許部分更新
+class UserUpdate(BaseModel):
+    username: Optional[str] = None
+    email: EmailStr
+    password: Optional[str] = Field(None, min_length=8, description="Password must be at least 8 characters long")
     first_name: Optional[str] = None
     last_name: Optional[str] = None
-    role: Optional[str] = None
+    phone_number: Optional[str] = None
     photo: Optional[str] = None
 
+# 用戶響應模型，不包含密碼
+class UserResponse(BaseModel):
+    username: str
+    email: EmailStr
+    role: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    phone_number: Optional[str] = None
+    photo: Optional[str] = None

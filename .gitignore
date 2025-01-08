@@ -18,3 +18,6 @@ project/frontend/public/build/
 
 # 忽略所有 __pycache__ 資料夾
 __pycache__/
+
+# 忽略所有 log 檔案
+*.log

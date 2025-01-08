@@ -34,12 +34,11 @@ echo "Trap set for EXIT, INT, and TERM signals"
 SCRIPT_DIR="$(pwd)"
 echo "Script directory: $SCRIPT_DIR"
 
-# Start the application
-echo "Starting the application"
+# Activate the virtual environment
+echo "Activate the virtual environment"
 PROJECT_DIR="$SCRIPT_DIR/project"
 if [ -d "$PROJECT_DIR" ]; then
     cd "$PROJECT_DIR" || exit
-    # Activate the virtual environment
     if [ -f "venv/bin/activate" ]; then
         source venv/bin/activate
     else

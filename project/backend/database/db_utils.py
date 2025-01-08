@@ -1,9 +1,10 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from model.user_model import UserResponse
+from sqlalchemy.sql import text
 import logging
 import os
 from dotenv import load_dotenv
+from model.user_model import UserResponse, UserLogin, UserUpdate
 
 # Load environment variables
 load_dotenv()
@@ -39,39 +40,53 @@ def execute_query(db, query, params=None):
         return None
 
 # Function to insert a new user
-def add_user(username, password, email, first_name=None, last_name=None, role='user', photo=None):
-    insert_query = """
-    INSERT INTO users (username, password, email, first_name, last_name, role, photo)
-    VALUES (%s, %s, %s, %s, %s, %s, %s)
-    RETURNING username, password, email;
-    """
-    params = (username, password, email, first_name, last_name, role, photo)
+def add_user(username, password, email, role='user', photo=None):
+    insert_query = text("""
+    INSERT INTO users (username, password, email, role, photo)
+    VALUES (:username, :password, :email, :role, :photo)
+    RETURNING username, email, role;
+    """)
+
+    params = {
+        "username": username,
+        "password": password,
+        "email": email,
+        "role": role,
+        "photo": photo
+    }
     
     with SessionLocal() as db:
         new_user = execute_query(db, insert_query, params)
 
     if new_user:
         logger.info(f"User {username} added successfully!")
-        return UserResponse(username=new_user[0], email=new_user[2])
+        return UserResponse(username=new_user.username, email=new_user.email, role=new_user.role)
     else:
         logger.error(f"Failed to add user {username}")
         return None
 
-# Function to fetch a user by username or email
-def get_user_by_username_or_email(identifier):
-    select_query = "SELECT * FROM users WHERE username = %s OR email = %s;"
-    params = (identifier, identifier)
-    
+# Function to fetch a user by username, email or phone number
+def get_user_for_authentication(username=None, email=None, phone_number=None):
+    select_query = text("""
+    SELECT * FROM users WHERE username = :username OR email = :email OR phone_number = :phone_number;
+    """)
+
+    params = {
+        "username": username,
+        "email": email,
+        "phone_number": phone_number
+    }
+
     with SessionLocal() as db:
         user = execute_query(db, select_query, params)
 
     if user:
-        logger.info(f"User {identifier} fetched successfully!")
-        return UserResponse(username=user[1], email=user[3])  # Assuming user[1] is username, user[3] is email
+        logger.info(f"User {username or email or phone_number} fetched successfully!")
+        return UserLogin(username=user.username, email=user.email, role=user.role, password=user.password)
     else:
-        logger.error(f"Failed to fetch user {identifier}")
+        logger.error(f"Failed to fetch user {username}")
         return None
-
+    
 # Function to fetch all users
 def fetch_all_users():
     select_query = "SELECT * FROM users;"
@@ -81,7 +96,11 @@ def fetch_all_users():
             users = db.execute(select_query).fetchall()
             if users:
                 logger.info("Fetched all users successfully!")
-                return [UserResponse(username=user[1], email=user[3]) for user in users]
+                return [UserResponse(
+                    username=user.username,
+                    email=user.email,
+                    role=user.role
+                ) for user in users]
             else:
                 return []
         except Exception as e:
@@ -107,8 +126,8 @@ def add_event(title, description, organizer_id, location_id, start_time, end_tim
         logger.error(f"Failed to add event {title}")
         return None
 
-# Function to get all events
-def get_all_events():
+# Function to fetch all events
+def fetch_all_events():
     select_query = "SELECT title, description, organizer_id, location_id, start_time, end_time, created_by, current_participants, max_participants, status, tags, likes, dislikes FROM events"
     
     with SessionLocal() as db:
@@ -119,3 +138,57 @@ def get_all_events():
         except Exception as e:
             logger.error(f"Error fetching events: {e}", exc_info=True)
             return []
+        
+# Function to fetch a user profile
+def get_user_profile(email):
+    select_query = text("""
+    SELECT username, email, first_name, last_name, phone_number, photo FROM users WHERE email = :email;
+    """)
+
+    params = {
+        "email": email
+    }
+
+    with SessionLocal() as db:
+        user = execute_query(db, select_query, params)
+
+    if user:
+        logger.info(f"User {email} fetched successfully!")
+        return UserUpdate(
+            username=user.username,
+            email=user.email,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            phone_number=user.phone_number,
+            photo=user.photo
+        )
+    else:
+        logger.error(f"Failed to fetch user {email}")
+        return None
+    
+# Function to update user information
+def update_user_info(user, user_update):
+    update_query = text("""
+    UPDATE users
+    SET username = :username, first_name = :first_name, last_name = :last_name, phone_number = :phone_number, photo = :photo
+    WHERE email = :email;
+    """)
+
+    params = {
+        "email": user.email,
+        "username": user_update.username,
+        "first_name": user_update.first_name,
+        "last_name": user_update.last_name,
+        "phone_number": user_update.phone_number,
+        "photo": user_update.photo
+    }
+
+    with SessionLocal() as db:
+        updated_user = execute_query(db, update_query, params)
+
+    if updated_user:
+        logger.info(f"User {updated_user.email} updated successfully!")
+        return UserResponse(username=updated_user.username, email=updated_user.email, role=updated_user.role, first_name=updated_user.first_name, last_name=updated_user.last_name, phone_number=updated_user.phone_number, photo=updated_user.photo)
+    else:
+        logger.error(f"Failed to update user {updated_user.email}")
+        return None

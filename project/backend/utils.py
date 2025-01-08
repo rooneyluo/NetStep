@@ -2,11 +2,13 @@ import bcrypt
 import jwt
 import os 
 import logging
+from typing import Optional
 
 from datetime import datetime, timedelta, timezone
 
 SECRET_KEY = str(os.getenv('SECRET_KEY'))
 ALGORITHM = str(os.getenv('JWT_ALGORITHM'))
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTES'))
 
 
 def setup_logger(name):
@@ -26,9 +28,12 @@ def hash_password(password):
 def verify_password(password, hashed_password):
     return bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8'))
 
-def create_access_token(data: dict, expires_delta: timedelta = timedelta(minutes=15)):
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + expires_delta
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({'exp': expire.timestamp()}) 
     encode_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encode_jwt

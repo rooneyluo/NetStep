@@ -28,7 +28,7 @@ class EventResponse(BaseModel):
     created_by: str
     current_participants: int
     max_participants: int
-    status: str
+    status: str = Field(..., pattern="^(active|cancelled|completed|expired)$")
     tags: Optional[str] = None
     likes: int
     dislikes: int

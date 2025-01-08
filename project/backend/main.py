@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 from routes.user_routes import router as user_router
+from routes.event_routes import router as event_router
 import uvicorn
 from dotenv import load_dotenv
 
@@ -42,6 +43,7 @@ async def global_exception_handler(request, exc):
     )
 
 app.include_router(user_router)
+app.include_router(event_router)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
