@@ -21,7 +21,6 @@ class UserLogin(BaseModel):
 # 用戶更新模型，允許部分更新
 class UserUpdate(BaseModel):
     username: Optional[str] = None
-    email: EmailStr
     password: Optional[str] = Field(None, min_length=8, description="Password must be at least 8 characters long")
     first_name: Optional[str] = None
     last_name: Optional[str] = None

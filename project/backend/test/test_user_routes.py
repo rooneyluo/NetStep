@@ -30,7 +30,7 @@ def mock_hash_password():
 def mock_create_access_token():
     with patch("routes.user_routes.create_access_token") as mock:
         yield mock
-        
+
 #@pytest.mark.usefixtures("mock_add_user", "mock_hash_password")
 def test_register_success(mock_add_user, mock_hash_password):
     mock_add_user.return_value = UserResponse(username="test11@example.com", email="test11@example.com", role="user")

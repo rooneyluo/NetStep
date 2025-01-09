@@ -8,6 +8,8 @@ def create_users_table(cur):
         CREATE TABLE IF NOT EXISTS users (
             id SERIAL PRIMARY KEY,
             username VARCHAR(255) UNIQUE NOT NULL,
+            first_name VARCHAR(255),
+            last_name VARCHAR(255),
             password VARCHAR(255) NOT NULL,
             email VARCHAR(255) UNIQUE NOT NULL,
             role VARCHAR(50) DEFAULT 'user' CHECK (role IN ('user', 'organizer', 'admin', 'superadmin')),
@@ -295,6 +297,6 @@ def drop_tables():
         print(f"Error dropping tables: {e}")
 
 if __name__ == "__main__":
+    #drop_tables()
     create_database("net_step")
     create_tables()
-    #drop_tables()

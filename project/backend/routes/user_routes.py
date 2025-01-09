@@ -85,5 +85,6 @@ async def update_user(user_update: UserUpdate, current_user: UserUpdate = Depend
     if not updated_user:
         raise HTTPException(status_code=400, detail="Failed to update user")
 
-    return UserResponse()
+    return UserResponse(username=updated_user.username, email=updated_user.email, role=updated_user.role, first_name=updated_user.first_name, last_name=updated_user.last_name, phone_number=updated_user.phone_number, photo=updated_user.photo)
+
 

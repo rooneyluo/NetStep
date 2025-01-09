@@ -4,7 +4,7 @@ from sqlalchemy.sql import text
 import logging
 import os
 from dotenv import load_dotenv
-from model.user_model import UserResponse, UserLogin, UserUpdate
+from model.user_model import UserResponse, UserLogin
 
 # Load environment variables
 load_dotenv()
@@ -142,7 +142,7 @@ def fetch_all_events():
 # Function to fetch a user profile
 def get_user_profile(email):
     select_query = text("""
-    SELECT username, email, first_name, last_name, phone_number, photo FROM users WHERE email = :email;
+    SELECT username, email, role FROM users WHERE email = :email;
     """)
 
     params = {
@@ -154,28 +154,26 @@ def get_user_profile(email):
 
     if user:
         logger.info(f"User {email} fetched successfully!")
-        return UserUpdate(
+        return UserResponse(
             username=user.username,
             email=user.email,
-            first_name=user.first_name,
-            last_name=user.last_name,
-            phone_number=user.phone_number,
-            photo=user.photo
+            role=user.role
         )
     else:
         logger.error(f"Failed to fetch user {email}")
         return None
     
 # Function to update user information
-def update_user_info(user, user_update):
+def update_user_info(current_user, user_update):
     update_query = text("""
     UPDATE users
     SET username = :username, first_name = :first_name, last_name = :last_name, phone_number = :phone_number, photo = :photo
-    WHERE email = :email;
+    WHERE email = :email
+    RETURNING username, email, role, first_name, last_name, phone_number, photo;
     """)
 
     params = {
-        "email": user.email,
+        "email": current_user.email,
         "username": user_update.username,
         "first_name": user_update.first_name,
         "last_name": user_update.last_name,
@@ -188,7 +186,7 @@ def update_user_info(user, user_update):
 
     if updated_user:
         logger.info(f"User {updated_user.email} updated successfully!")
-        return UserResponse(username=updated_user.username, email=updated_user.email, role=updated_user.role, first_name=updated_user.first_name, last_name=updated_user.last_name, phone_number=updated_user.phone_number, photo=updated_user.photo)
+        return UserResponse(username=updated_user.username, email=current_user.email, role=updated_user.role, first_name=updated_user.first_name, last_name=updated_user.last_name, phone_number=updated_user.phone_number, photo=updated_user.photo)
     else:
         logger.error(f"Failed to update user {updated_user.email}")
         return None
