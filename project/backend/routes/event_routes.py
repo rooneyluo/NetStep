@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from database.db_utils import add_event, fetch_all_events
 from model.event_model import EventCreate, EventResponse
-from utils import setup_logger
+from utils.utils import setup_logger
 from typing import List
 
 router = APIRouter()
