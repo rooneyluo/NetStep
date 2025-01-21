@@ -1,6 +1,6 @@
 # Python 虛擬環境
 venv/
-.env
+#.env
 
 # 前端相關忽略規則
 project/frontend/node_modules/
