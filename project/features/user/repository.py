@@ -6,6 +6,19 @@ class UserRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
+    async def execute_in_transaction(self, operations: callable):
+        """
+        Executes a set of operations inside a single transaction.
+        """
+        async with self.db.begin():  # 自動管理 transaction
+            try:
+                result = await operations()
+                await self.db.commit()  # 成功後提交交易
+                return result
+            except Exception as e:
+                await self.db.rollback()  # 發生例外時回滾
+                raise e
+
     async def get_user_by_email(self, email: str) -> User:
         return await self.get_user(email=email)
     
@@ -22,13 +35,13 @@ class UserRepository:
 
     async def create_user(self, user: User) -> User:
         self.db.add(user)
-        await self.db.commit()
-        await self.db.refresh(user)
+        await self.db.flush([user])
         return user
 
     async def create_user_auth(self, user_auth: UserAuth):
         self.db.add(user_auth)
-        await self.db.commit()
+        await self.db.flush([user_auth])
+        return user_auth
 
     async def update_user(self, user: User) -> User:
         await self.db.commit()
@@ -36,5 +49,11 @@ class UserRepository:
         return user
 
     async def delete_user(self, user: User):
-        await self.db.delete(user)
+        user.status = "inactive"
         await self.db.commit()
+        await self.db.refresh(user)
+
+    async def get_all_users(self) -> list[User]:
+        query = select(User)
+        result = await self.db.execute(query)
+        return result.scalars().all()

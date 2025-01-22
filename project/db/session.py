@@ -7,7 +7,7 @@ DATABASE_URL = f"postgresql+asyncpg://{DB_CONFIG['user']}:{DB_CONFIG['password']
 
 # SQLAlchemy Base and Engine
 Base = declarative_base()
-engine = create_async_engine(DATABASE_URL, echo=True, pool_size=5, max_overflow=10)
+engine = create_async_engine(DATABASE_URL, echo=False, pool_size=5, max_overflow=10)
 
 # create a session class
 SessionLocal = sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)

@@ -12,6 +12,8 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False)
     role = Column(String(50), default="user", nullable=False)
     profile_image_url = Column(Text, nullable=True)
+
+    is_phone_number_verified = Column(Boolean, default=False)
     phone_number = Column(String(50))
 
     is_email_verified = Column(Boolean, default=False)
