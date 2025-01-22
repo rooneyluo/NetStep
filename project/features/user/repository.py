@@ -57,3 +57,36 @@ class UserRepository:
         query = select(User)
         result = await self.db.execute(query)
         return result.scalars().all()
+    
+    async def get_user_auth_by_user_id(self, user_id: int) -> UserAuth:
+        query = select(UserAuth).filter_by(user_id=user_id)
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()
+
+    """
+    async def get_user_by_oauth_provider(self, provider: str, provider_id: str) -> User:
+        query = select(User).join(UserAuthProvider).where(
+            UserAuthProvider.provider == provider,
+            UserAuthProvider.provider_id == provider_id
+        )
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()
+
+    async def create_user_from_oauth(self, provider: str, provider_id: str, provider_token: str) -> User:
+        new_user = User(username=f"{provider}_{provider_id}", email=f"{provider}_{provider_id}@example.com")
+        self.db.add(new_user)
+        await self.db.commit()
+        await self.db.refresh(new_user)
+
+        # 關聯 OAuth 提供者
+        oauth_provider = UserAuthProvider(
+            user_id=new_user.id,
+            provider=provider,
+            provider_id=provider_id,
+            provider_token=provider_token,
+        )
+        self.db.add(oauth_provider)
+        await self.db.commit()
+
+        return new_user
+    """

@@ -1,8 +1,8 @@
 from db.models.users import User, UserAuth
 from features.user.repository import UserRepository
 from features.user.schemas import UserCreate, UserResponse, UserUpdate
-from core.security import hash_password
-from features.user.exceptions import UserNotFoundError, UserDeleteError, UserExistsError
+from utils.security import hash_password
+from features.user.exceptions import UserNotFoundError, UserDeleteError, UserExistsError, UserCreateError, UserUpdateError
 
 class UserService:
     def __init__(self, user_repo: UserRepository):
@@ -44,6 +44,9 @@ class UserService:
         # execute operations inside a transaction
         new_user = await self.user_repo.execute_in_transaction(operations)
 
+        if not new_user:
+            raise UserCreateError("User create error")
+        
         return UserResponse.model_validate(new_user)
 
     async def get_user(self, identifier) -> UserResponse:
@@ -68,6 +71,9 @@ class UserService:
         # update user in database
         updated_user = await self.user_repo.update_user(user)
 
+        if not updated_user:
+            raise UserUpdateError("User update error")
+        
         # validate and return updated user
         return UserResponse.model_validate(updated_user)
 

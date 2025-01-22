@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 from api.v1.users import router as user_router
+from api.v1.auth import router as auth_router
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -41,6 +42,7 @@ async def global_exception_handler(request, exc):
     )
 
 app.include_router(user_router, prefix="/api/v1/users", tags=["Users"])
+app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
