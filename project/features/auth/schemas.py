@@ -17,6 +17,5 @@ class SignupRequest(BaseModel):
     password: str
 
 class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str
-
+    token: str
+    token_type: str | None

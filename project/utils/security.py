@@ -32,8 +32,13 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encode_jwt
 
 def decode_access_token(token: str) -> dict:
-    return jwt.decode(token, ACCESS_TOKEN_SECRET_KEY, algorithms=[ALGORITHM])
-
+    try:
+        return jwt.decode(token, ACCESS_TOKEN_SECRET_KEY, algorithms=[ALGORITHM])
+    except jwt.ExpiredSignatureError:
+        raise ValueError("Access token has expired")
+    except jwt.InvalidTokenError:
+        raise ValueError("Invalid access token")
+    
 def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
     if expires_delta:
@@ -45,5 +50,11 @@ def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encode_jwt
 
 def decode_refresh_token(token: str) -> dict:
-    return jwt.decode(token, REFRESH_TOKEN_SECRET_KEY, algorithms=[ALGORITHM])
+    try:
+        return jwt.decode(token, REFRESH_TOKEN_SECRET_KEY, algorithms=[ALGORITHM])
+    except jwt.ExpiredSignatureError:
+        raise ValueError("Refresh token has expired")
+    except jwt.InvalidTokenError:
+        raise ValueError("Invalid refresh token")
+    
  
