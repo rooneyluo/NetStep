@@ -51,7 +51,7 @@ class AuthService:
 
         user_auth = await self.user_repo.get_user_auth_by_user_id(user.id)
 
-        if not verify_password(hash_password(data.password), user_auth.password):
+        if not verify_password(data.password, user_auth.password):
             raise InvalidCredentialsError("Invalid credentials")
 
         access_token = create_access_token(data={"sub": user.email})

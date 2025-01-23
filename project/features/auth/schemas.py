@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, field_validator, ValidationInfo
+from pydantic import BaseModel, EmailStr, model_validator
 from typing import Optional
 
 class LoginRequest(BaseModel):
@@ -6,12 +6,12 @@ class LoginRequest(BaseModel):
     username: Optional[str] = None
     password: str
 
-    @field_validator('email', 'username')
-    def check_email_or_username(cls, v, info: ValidationInfo):
-        if not info.data.get('email') and not info.data.get('username'):
+    @model_validator(mode="after")
+    def check_email_or_username(cls, values):
+        if not values.email and not values.username:
             raise ValueError("Either email or username is required")
-        return v
-
+        return values
+    
 class SignupRequest(BaseModel):
     email: EmailStr
     password: str
